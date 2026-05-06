@@ -1,0 +1,24 @@
+<?php
+
+namespace Tests\Feature\Api\V1;
+
+use Tests\TestCase;
+
+class HealthTest extends TestCase
+{
+    public function test_health_returns_ok_payload(): void
+    {
+        $response = $this->getJson('/api/v1/health');
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'status',
+                'timestamp',
+                'application' => [
+                    'name',
+                    'environment',
+                ],
+            ])
+            ->assertJsonPath('status', 'ok');
+    }
+}
