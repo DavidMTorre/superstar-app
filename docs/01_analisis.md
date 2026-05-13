@@ -23,4 +23,6 @@ El backend debe exponer operaciones claras de alta de usuario, acceso con creden
 
 ## 4. Alcance documentado
 
-Este análisis se centra en el backend Laravel tal como está implementado en el repositorio: rutas en `routes/api.php`, capas bajo `app/`, migraciones y pruebas en `tests/`. El frontend React se describe a nivel de stack; su integración detallada puede ampliarse en iteraciones posteriores del proyecto.
+Este análisis describe el **sistema completo** del repositorio en su estado actual: API Laravel bajo `/api/v1`, cliente **React + Vite**, autenticación **Sanctum**, módulos de cartelera, reservas, disponibilidad, confitería, pagos simulados, perfil de usuario, panel de administración y **tickets con código QR** (generación visual en servidor y validación controlada).
+
+La documentación detallada se mantiene **modular** en subcarpetas de `docs/` (funcionalidades, arquitectura, pruebas, calidad, anexos) y en documentos raíz numerados (`01_` … `06_`). El frontend se describe en `docs/arquitectura/frontend.md` y en ficheros por funcionalidad bajo `docs/funcionalidades/`.

@@ -1,14 +1,20 @@
 :root {
-  --color-primary: #ff6b00;
-  --color-primary-dark: #e65c00;
-  --color-primary-light: #ffa559;
+  /* Corporativo — cine premium */
+  --color-primary: #ff7a00;
+  --color-primary-dark: #e86800;
+  --color-primary-light: #ff9a3d;
+  --color-primary-glow: rgba(255, 122, 0, 0.35);
+  --color-accent-gold: #c9a96e;
 
-  --color-secondary: #1f1f1f;
-  --color-background: #fff7f0;
-  --color-surface: #ffffff;
+  --color-secondary: #15151d;
+  --color-background: #0b0b0f;
+  --color-surface: #15151d;
+  --color-card: #1b1b25;
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
 
-  --color-text: #2d2d2d;
-  --color-text-light: #777;
+  --color-text: #f5f5f5;
+  --color-text-light: #a1a1aa;
+  --color-text-muted: #71717a;
 
   --color-success: #28c76f;
   --color-error: #ea5455;
@@ -17,9 +23,11 @@
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
+  --radius-xl: 20px;
 
-  --shadow-card: 0 8px 24px rgba(31, 31, 31, 0.08);
-  --shadow-hover: 0 12px 32px rgba(255, 107, 0, 0.15);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --shadow-hover: 0 16px 48px rgba(255, 122, 0, 0.18);
+  --shadow-glow-brand: 0 0 32px var(--color-primary-glow);
 
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
@@ -28,8 +36,11 @@
   --space-xl: 2rem;
   --space-2xl: 3rem;
 
-  --font-sans: system-ui, -apple-system, 'Segoe UI', roboto, ubuntu, sans-serif;
+  --font-sans: 'Outfit', ui-sans-serif, system-ui, sans-serif;
 
   --transition-fast: 0.15s ease;
   --transition-normal: 0.25s ease;
+
+  --header-height: 4rem;
+  --bottom-nav-height: 4.25rem;
 }

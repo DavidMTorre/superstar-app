@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { CheckCircle2, CreditCard } from 'lucide-react'
 import { pagar } from '../api/api'
 import { Button } from '../components/Button'
 import { Input } from '../components/Input'
@@ -81,30 +83,45 @@ export default function PagoPage() {
   }
 
   if (exito?.exito && exito?.datos) {
-    const qr = exito.datos.ticket?.codigo_qr
+    const qrImg = exito.datos.ticket?.qr_imagen
     return (
-      <div style={{ paddingTop: 'var(--space-lg)', maxWidth: '520px', margin: '0 auto' }}>
-        <div className="mc-form-panel">
-          <h1 style={{ color: 'var(--color-success)' }}>Pago confirmado</h1>
+      <div className="mx-auto max-w-lg pb-8 pt-2">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="mc-form-panel !max-w-none border border-[rgba(40,199,111,0.35)] bg-[var(--color-card)]/95 text-center shadow-[0_24px_64px_rgba(0,0,0,0.4)] backdrop-blur-md"
+        >
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[rgba(40,199,111,0.2)] text-[var(--color-success)]">
+            <CheckCircle2 className="h-8 w-8" aria-hidden />
+          </div>
+          <h1 className="mb-2 text-2xl font-extrabold text-[var(--color-success)]">Pago confirmado</h1>
           <MensajeAlerta tipo="exito">
             Tu entrada está lista. Guarda el código QR para el acceso a sala.
           </MensajeAlerta>
-          {qr ? (
-            <div
-              style={{
-                padding: 'var(--space-md)',
-                background: 'rgba(40, 199, 111, 0.08)',
-                borderRadius: 'var(--radius-md)',
-                wordBreak: 'break-all',
-                fontFamily: 'monospace',
-                fontSize: '0.85rem',
-                marginBottom: 'var(--space-lg)',
-              }}
-            >
-              <strong>Código ticket (QR):</strong>
-              <br />
-              {qr}
+          {qrImg ? (
+            <div className="mb-6 mt-6">
+              <p className="mb-3 flex items-center justify-center gap-2 text-sm font-semibold text-[var(--color-text-light)]">
+                <CreditCard className="h-4 w-4 text-[var(--color-accent-gold)]" aria-hidden />
+                Tu código QR de ingreso
+              </p>
+              <motion.img
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                src={qrImg}
+                alt="Código QR del ticket"
+                className="mx-auto w-[min(280px,85vw)] rounded-2xl border border-[rgba(255,122,0,0.35)] shadow-[0_0_40px_rgba(255,122,0,0.15)]"
+              />
             </div>
+          ) : null}
+          {exito.datos.ticket?.token_qr ? (
+            <p className="mb-6">
+              <Link
+                to={`/ticket/${encodeURIComponent(exito.datos.ticket.token_qr)}`}
+                className="text-sm font-bold text-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
+              >
+                Ver ticket completo
+              </Link>
+            </p>
           ) : null}
           <Button
             type="button"
@@ -114,18 +131,31 @@ export default function PagoPage() {
           >
             Volver a cartelera
           </Button>
-        </div>
+        </motion.div>
       </div>
     )
   }
 
   return (
-    <div style={{ paddingTop: 'var(--space-lg)' }}>
-      <p style={{ marginBottom: 'var(--space-md)' }}>
-        <Link to="/cartelera">← Inicio</Link>
+    <div className="mx-auto max-w-lg pb-8 pt-2">
+      <p className="mb-4">
+        <Link
+          to="/cartelera"
+          className="text-sm font-medium text-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
+        >
+          ← Inicio
+        </Link>
       </p>
-      <div className="mc-form-panel">
-        <h1 style={{ marginBottom: 'var(--space-sm)' }}>Pagar reserva</h1>
+      <div className="mc-form-panel border border-[var(--color-border-subtle)] bg-[var(--color-card)]/95 shadow-[0_24px_64px_rgba(0,0,0,0.35)] backdrop-blur-md">
+        <div className="mb-6 flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[rgba(255,122,0,0.15)] text-[var(--color-primary-light)]">
+            <CreditCard className="h-5 w-5" aria-hidden />
+          </span>
+          <div>
+            <h1 className="mb-0 text-xl font-extrabold tracking-tight">Pagar reserva</h1>
+            <p className="mb-0 mt-0.5 text-xs text-[var(--color-text-muted)]">Completa el pago de tu función</p>
+          </div>
+        </div>
         {resumen ? (
           <p style={{ fontSize: '0.9rem', color: 'var(--color-text-light)' }}>
             {(resumen.pelicula_titulo || resumen.pelicula?.titulo) ? (
@@ -151,15 +181,7 @@ export default function PagoPage() {
           </p>
         ) : null}
         {resumen?.precio_total != null ? (
-          <div
-            style={{
-              fontSize: '0.95rem',
-              marginBottom: 'var(--space-md)',
-              padding: 'var(--space-md)',
-              borderRadius: 'var(--radius-md)',
-              background: 'rgba(0,0,0,0.04)',
-            }}
-          >
+          <div className="mb-6 rounded-xl border border-[var(--color-border-subtle)] bg-[rgba(255,255,255,0.03)] p-4 text-sm">
             <p style={{ margin: '0 0 0.35rem' }}>
               Precio entrada:{' '}
               <strong>S/ {Number(resumen.precio_total).toFixed(2)}</strong>

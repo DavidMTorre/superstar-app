@@ -9,14 +9,17 @@ import SalasHorariosAdmin from './admin/pages/SalasHorariosAdmin'
 import ReservasAdmin from './admin/ReservasAdmin'
 import RutaAdmin from './admin/RutaAdmin'
 import UsuariosAdmin from './admin/UsuariosAdmin'
+import ValidarTicketPage from './admin/pages/ValidarTicketPage'
 import { useSesionUsuario } from './hooks/useSesionUsuario'
 import { Layout } from './layout/Layout'
 import CarteleraPage from './pages/CarteleraPage'
 import LoginPage from './pages/LoginPage'
 import ConfiteriaPage from './pages/ConfiteriaPage'
 import PagoPage from './pages/PagoPage'
+import PerfilPage from './pages/PerfilPage'
 import RegistroPage from './pages/RegistroPage'
 import ReservaPage from './pages/ReservaPage'
+import TicketPage from './pages/TicketPage'
 
 export default function App() {
   const sesion = useSesionUsuario()
@@ -47,6 +50,7 @@ export default function App() {
           <Route path="combos" element={<CombosAdmin />} />
           <Route path="reservas" element={<ReservasAdmin />} />
           <Route path="usuarios" element={<UsuariosAdmin />} />
+          <Route path="validar-ticket" element={<ValidarTicketPage />} />
         </Route>
 
         <Route
@@ -71,6 +75,17 @@ export default function App() {
           />
           <Route path="/confiteria" element={<ConfiteriaPage />} />
           <Route path="/pago" element={<PagoPage />} />
+          <Route path="/ticket/:token" element={<TicketPage />} />
+          <Route
+            path="/perfil"
+            element={
+              sesion.estaAutenticado ? (
+                <PerfilPage usuario={sesion.usuario} token={sesion.token} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
           <Route path="*" element={<Navigate to="/cartelera" replace />} />
         </Route>
       </Routes>

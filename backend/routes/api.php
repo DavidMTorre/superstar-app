@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\Peliculas\BuscarPeliculasController;
 use App\Http\Controllers\Api\V1\Salas\ListarSalasPublicasController;
 use App\Http\Controllers\Api\V1\Peliculas\ListarPeliculasController;
 use App\Http\Controllers\Api\V1\Accesos\ValidarAccesoController;
+use App\Http\Controllers\Api\V1\Tickets\TicketController;
 use App\Http\Controllers\Api\V1\Admin\AdminComboController;
 use App\Http\Controllers\Api\V1\Admin\AdminDashboardController;
 use App\Http\Controllers\Api\V1\Admin\AdminEstadisticasController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\Api\V1\Admin\AdminSalaHorarioController;
 use App\Http\Controllers\Api\V1\Admin\AdminProductoConfiteriaController;
 use App\Http\Controllers\Api\V1\Admin\AdminUsuarioController;
 use App\Http\Controllers\Api\V1\Pagos\RealizarPagoController;
+use App\Http\Controllers\Api\V1\Perfil\PerfilController;
 use App\Http\Controllers\Api\V1\Confiteria\AgregarProductosConfiteriaController;
 use App\Http\Controllers\Api\V1\Confiteria\ListarCombosConfiteriaController;
 use App\Http\Controllers\Api\V1\Confiteria\ListarProductosConfiteriaController;
@@ -49,6 +51,14 @@ Route::prefix('v1')->group(function (): void {
 
     Route::post('/pagos', RealizarPagoController::class)->name('api.v1.pagos.store');
 
+    Route::post('/tickets/validar', [TicketController::class, 'validar'])
+        ->middleware(['auth:sanctum', 'es_admin'])
+        ->name('api.v1.tickets.validar');
+
+    Route::get('/tickets/{token}', [TicketController::class, 'show'])
+        ->where('token', '.+')
+        ->name('api.v1.tickets.show');
+
     Route::post('/accesos/validar', ValidarAccesoController::class)->name('api.v1.accesos.validar');
 
     Route::prefix('auth')->group(function (): void {
@@ -56,6 +66,14 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/login', LoginController::class)->name('api.v1.auth.login');
         Route::post('/invitado', InvitadoController::class)->name('api.v1.auth.invitado');
     });
+
+    Route::prefix('perfil')
+        ->middleware('auth:sanctum')
+        ->group(function (): void {
+            Route::get('/', [PerfilController::class, 'show'])->name('api.v1.perfil.show');
+            Route::put('/password', [PerfilController::class, 'updatePassword'])->name('api.v1.perfil.password');
+            Route::get('/reservas', [PerfilController::class, 'reservas'])->name('api.v1.perfil.reservas');
+        });
 
     Route::prefix('admin')
         ->middleware(['auth:sanctum', 'es_admin'])

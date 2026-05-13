@@ -1,87 +1,62 @@
 # Implementación — MiniCine Superstar
 
-## 1. Estructura del backend
+## 1. Objetivo
 
-Árbol conceptual relevante (no exhaustivo):
+Describir la **estructura real** del repositorio y el reparto de responsabilidades entre backend Laravel y frontend React, en línea con la arquitectura documentada en `02_diseno.md` y ampliada en `docs/arquitectura/`.
+
+## 2. Estructura del backend (orientativa)
 
 ```
 backend/
 ├── app/
 │   ├── Http/
-│   │   ├── Controllers/
-│   │   │   └── Api/V1/
-│   │   │       ├── HealthController.php
-│   │   │       └── Auth/
-│   │   │           ├── RegistroController.php
-│   │   │           ├── LoginController.php
-│   │   │           └── InvitadoController.php
-│   │   └── Requests/
-│   │       └── Api/
-│   │           ├── ApiFormRequest.php
-│   │           └── V1/
-│   │               ├── HealthCheckRequest.php
-│   │               └── Auth/
-│   │                   ├── RegistroRequest.php
-│   │                   ├── LoginRequest.php
-│   │                   └── InvitadoRequest.php
-│   ├── Models/
-│   │   └── User.php
-│   ├── Repositories/
-│   │   ├── HealthRepository.php
-│   │   └── UserRepository.php
-│   └── Services/
-│       ├── HealthService.php
-│       └── AuthService.php
-├── routes/
-│   └── api.php
-├── database/
-│   └── migrations/
-└── tests/
-    └── Feature/Api/V1/
-        ├── HealthTest.php
-        └── Auth/AuthApiTest.php
+│   │   ├── Controllers/Api/V1/   # Health, Auth, Peliculas, Reservas, Pagos, Tickets, Perfil, Admin, …
+│   │   ├── Middleware/           # EnsureUserIsAdmin, …
+│   │   └── Requests/Api/V1/      # Form Requests por dominio
+│   ├── Models/                   # User, Reserva, Pago, Pelicula, …
+│   ├── Repositories/             # Acceso datos (UserRepository, ReservaRepository, TicketRepository, …)
+│   └── Services/                 # Lógica de negocio (AuthService, PagoService, TicketService, PerfilService, …)
+├── routes/api.php
+├── database/migrations/
+└── tests/Feature/Api/V1/         # Pruebas HTTP por módulo
 ```
 
-## 2. Uso de Laravel
+## 3. Estructura del frontend
 
-### 2.1 Enrutamiento
+```
+frontend/
+├── src/
+│   ├── pages/           # Cartelera, Reserva, Pago, Perfil, Ticket, Login, …
+│   ├── admin/         # Panel y páginas (incl. ValidarTicketPage)
+│   ├── components/
+│   ├── api/api.js
+│   ├── hooks/
+│   └── layout/
+└── vite.config.js
+```
 
-`bootstrap/app.php` registra `routes/api.php` como rutas API. El grupo `v1` y el subgrupo `auth` concentran los endpoints REST documentados en `routes/api.php`.
+## 4. Tabla de correspondencia (ejemplos)
 
-### 2.2 Validación
-
-- **`ApiFormRequest`:** Sobrescribe `failedValidation` para devolver JSON 422 con `exito`, `mensaje` y `errores`.
-- **Auth:** `RegistroRequest`, `LoginRequest` e `InvitadoRequest` extienden `ApiFormRequest` (excepto el health, que usa `FormRequest` base).
-
-### 2.3 Modelo `User`
-
-- Extiende `Authenticatable`.
-- `password` con cast `hashed` y en `$hidden` para no exponerlo en serialización.
-- Campos de perfil: `telefono`, `fecha_nacimiento` (cast a fecha), `genero`.
-
-### 2.4 Servicios
-
-- **`AuthService`:** `registrarUsuario`, `iniciarSesion` (Hash::check), `crearSesionInvitado`; método privado `usuarioPublico` para la forma de salida del usuario.
-- **`HealthService`:** Ensambla `status`, `timestamp` ISO8601 y metadatos desde `HealthRepository`.
-
-### 2.5 Repositorios
-
-- **`UserRepository`:** `create` para registro; `findByEmail` para login.
-- **`HealthRepository`:** Lee `config('app.name')` y `config('app.env')`.
-
-## 3. Cómo se implementaron las funcionalidades
-
-| Funcionalidad | Controlador | Form Request | Service | Repository |
-|---------------|-------------|--------------|---------|------------|
+| Funcionalidad | Controller (invocable o resource) | Request | Service | Repository |
+|---------------|-----------------------------------|---------|---------|------------|
 | Health | `HealthController` | `HealthCheckRequest` | `HealthService` | `HealthRepository` |
-| Registro | `RegistroController` | `RegistroRequest` | `AuthService::registrarUsuario` | `UserRepository::create` |
-| Login | `LoginController` | `LoginRequest` | `AuthService::iniciarSesion` | `UserRepository::findByEmail` |
-| Invitado | `InvitadoController` | `InvitadoRequest` | `AuthService::crearSesionInvitado` | — |
+| Login | `LoginController` | `LoginRequest` | `AuthService` | `UserRepository` |
+| Crear reserva | `CrearReservaController` | `CrearReservaRequest` | Servicio de reservas | `ReservaRepository`, … |
+| Pago | `RealizarPagoController` | `RealizarPagoRequest` | `PagoService` | `PagoRepository`, `ReservaRepository` |
+| Ticket público / validar | `TicketController` | `ValidarTicketRequest` (validar) | `TicketService` | `TicketRepository` |
+| Perfil | `PerfilController` | `CambiarPasswordRequest`, … | `PerfilService` | `UserRepository`, `ReservaRepository` |
 
-## 4. Base de datos
+## 5. Base de datos y configuración
 
-La migración por defecto de Laravel para `users` incluye además tablas `password_reset_tokens` y `sessions`. Los campos específicos del dominio están en la definición de `users` (nombre, email único, contraseña, teléfono, fecha de nacimiento, género).
+- Migraciones en `database/migrations/` definen el esquema (ver [anexos/estructura_bd.md](anexos/estructura_bd.md)).
+- `FRONTEND_URL` en backend alimenta URLs absolutas en códigos QR.
 
-## 5. Frontend (referencia)
+## 6. Referencias
 
-El proyecto incluye una aplicación **React + Vite** bajo `frontend/`. La consumición de la API se realiza mediante peticiones HTTP al backend; la configuración de URL base y almacenamiento de sesión en cliente queda fuera del alcance de los archivos backend citados aquí.
+- Detalle por funcionalidad: `docs/funcionalidades/`.
+- Pruebas: `docs/04_pruebas.md` y `docs/pruebas/`.
+- Calidad: `docs/05_calidad_sonarqube.md` y `docs/calidad/`.
+
+## 7. Conclusión
+
+La implementación mantiene **controladores ligeros** y **reglas de negocio en servicios**, facilitando auditorías y análisis estático.

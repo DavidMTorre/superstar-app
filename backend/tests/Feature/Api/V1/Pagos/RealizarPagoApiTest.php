@@ -70,7 +70,7 @@ class RealizarPagoApiTest extends TestCase
             ->assertJsonStructure([
                 'datos' => [
                     'pago' => ['id', 'reserva_id', 'metodo_pago', 'estado', 'monto', 'fecha_pago'],
-                    'ticket' => ['codigo_qr'],
+                    'ticket' => ['codigo_reserva', 'codigo_qr', 'token_qr', 'qr_imagen'],
                 ],
             ]);
 
@@ -80,6 +80,9 @@ class RealizarPagoApiTest extends TestCase
         $this->assertNotEmpty($response->json('datos.ticket.codigo_qr'));
 
         $codigoTicket = $response->json('datos.ticket.codigo_qr');
+        $qrImg = $response->json('datos.ticket.qr_imagen');
+        $this->assertIsString($qrImg);
+        $this->assertStringStartsWith('data:image/', $qrImg);
 
         $this->assertDatabaseHas('pagos', [
             'reserva_id' => $reserva->id,
@@ -90,6 +93,7 @@ class RealizarPagoApiTest extends TestCase
 
         $reserva->refresh();
         $this->assertSame('pagado', $reserva->metadata['pago_estado']);
+        $this->assertSame($codigoTicket, $reserva->token_qr);
     }
 
     public function test_reserva_inexistente(): void

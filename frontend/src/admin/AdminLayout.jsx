@@ -11,6 +11,7 @@ const enlaces = [
   { to: '/admin/combos', label: 'Combos' },
   { to: '/admin/reservas', label: 'Reservas' },
   { to: '/admin/usuarios', label: 'Usuarios' },
+  { to: '/admin/validar-ticket', label: 'Validar QR' },
 ]
 
 export function AdminLayout({ usuario, token, cerrarSesion }) {

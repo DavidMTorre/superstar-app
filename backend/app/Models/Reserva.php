@@ -25,6 +25,9 @@ class Reserva extends Model
         'precio_total',
         'estado',
         'metadata',
+        'token_qr',
+        'ticket_usado',
+        'hora_ingreso',
         'fecha_uso_acceso',
     ];
 
@@ -37,6 +40,8 @@ class Reserva extends Model
             'metadata' => 'array',
             'fecha' => 'date',
             'fecha_uso_acceso' => 'datetime',
+            'hora_ingreso' => 'datetime',
+            'ticket_usado' => 'boolean',
             'precio_total' => 'decimal:2',
         ];
     }

@@ -4,11 +4,11 @@
 
 El personal de sala (o torniquete digital) envía el **payload escaneado del QR** al backend. El sistema:
 
-1. Localiza el **pago** asociado al código almacenado (`pagos.codigo_ticket_qr`).
+1. Localiza la **reserva** por `reservas.token_qr` o, en datos legados, el **pago** por `pagos.codigo_ticket_qr`.
 2. Verifica la **integridad HMAC** respecto a la reserva (`TicketQr::coincide`).
 3. Comprueba que el **pago esté confirmado** (`pagado`) y que la reserva tenga **`metadata.pago_estado = pagado`**.
-4. Comprueba que el ticket **no haya sido usado** (`reservas.fecha_uso_acceso` nulo y estado distinto de `utilizada`).
-5. En una **transacción** con bloqueo pesimista (`lockForUpdate`), marca la reserva como **`utilizada`** y registra **`fecha_uso_acceso`**.
+4. Comprueba que el ticket **no esté expirado** (función ya finalizada según fecha/hora fin).
+5. En una **transacción** con bloqueo pesimista (`lockForUpdate`), marca la reserva como **`utilizada`**, **`ticket_usado`**, **`hora_ingreso`** y registra **`fecha_uso_acceso`**.
 
 Así se evita el doble ingreso concurrente y se mantiene trazabilidad del primer uso del ticket.
 
@@ -42,9 +42,15 @@ Así se evita el doble ingreso concurrente y se mantiene trazabilidad del primer
 | Código no emitido o alterado | `QR inválido.` |
 | Inconsistencia de datos | `Reserva no encontrada.` |
 | Pago no confirmado | `La reserva no está pagada.` |
-| Ticket ya utilizado | `Este ticket ya fue utilizado.` |
+| Función finalizada | `La función ya finalizó` |
 
 Las respuestas usan `{ "exito": false, "mensaje": "..." }`. Los errores de **validación** del Form Request mantienen el formato estándar del API (`Error de validación`, `errores`, etc.).
+
+### Endpoint complementario (admin)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `POST` | `/api/v1/tickets/validar` | Validación con Bearer **admin**; respuesta con datos de película/sala/cliente si procede. |
 
 ## Validaciones (Form Request)
 
@@ -58,8 +64,8 @@ Las respuestas usan `{ "exito": false, "mensaje": "..." }`. Los errores de **val
 |------|------------|
 | Controller | `ValidarAccesoController` |
 | Request | `ValidarAccesoRequest` |
-| Service | `AccesoService` |
-| Repository | `AccesoRepository` |
+| Service | `AccesoService` → delega en `TicketService` (misma regla de negocio que `POST /api/v1/tickets/validar` para admin) |
+| Repository | `TicketRepository` (bloqueo y registro de ingreso) |
 | Soporte criptográfico | `App\Support\TicketQr` (HMAC-SHA256 + Base64 URL-safe) |
 
 El controlador **no** contiene reglas de negocio; solo traduce el resultado del servicio a JSON y códigos HTTP.
@@ -75,6 +81,8 @@ Archivo: `tests/Feature/Api/V1/Accesos/AccesoApiTest.php`
 | `test_acceso_duplicado` | Segunda validación del mismo código → rechazo. |
 | `test_reserva_no_pagada` | Pago en estado `pendiente` con código generado → rechazo. |
 
+Además: `tests/Feature/Api/V1/Tickets/TicketApiTest.php` cubre **GET ticket público**, **validación admin** y estados **expirado / usado / inválido**.
+
 Ejecución:
 
 ```bash
@@ -87,7 +95,7 @@ php artisan test --filter=AccesoApiTest
 
 - **Integridad:** el código QR se basa en **HMAC** con la clave de aplicación; la coincidencia se verifica frente a la reserva asociada al pago.
 - **Confidencialidad:** el endpoint debe exponerse solo en redes controladas y **HTTPS** en producción; el código es un secreto compartido entre emisor y verificador (no debe loguearse en claro en sistemas no confiables).
-- **Autenticación/autorización:** la API actual no identifica al operador de torniquete; en despliegue real conviene API keys, roles o integración con directorio corporativo según la política de acceso.
+- **Autenticación/autorización:** el endpoint público `/accesos/validar` no identifica al operador; **`POST /tickets/validar`** exige usuario **admin** con Sanctum. En despliegue real conviene **HTTPS**, registro de auditoría y políticas de dispositivo en sala.
 
 ### ISO/IEC/IEEE 29119 (pruebas)
 

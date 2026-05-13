@@ -14,7 +14,8 @@ class PagoService
 {
     public function __construct(
         private readonly ReservaRepository $reservaRepository,
-        private readonly PagoRepository $pagoRepository
+        private readonly PagoRepository $pagoRepository,
+        private readonly TicketService $ticketService
     ) {}
 
     /**
@@ -63,6 +64,11 @@ class PagoService
                     'pago_estado' => 'pagado',
                 ]);
 
+                $reservaActualizada = $reserva->fresh();
+                if ($reservaActualizada !== null) {
+                    $this->reservaRepository->asignarTokenQr($reservaActualizada, $codigoTicketQr);
+                }
+
                 return $pago;
             });
         } catch (QueryException $exception) {
@@ -76,11 +82,20 @@ class PagoService
             throw $exception;
         }
 
+        $pago = $pago->fresh(['reserva']);
+        $tokenQr = (string) ($pago?->codigo_ticket_qr ?? '');
+        $codigoReservaStr = (string) ($pago?->reserva?->codigo_reserva ?? '');
+
         return [
             'ok' => true,
             'pago' => $this->pagoPublico($pago),
             'ticket' => [
-                'codigo_qr' => (string) $pago->codigo_ticket_qr,
+                'codigo_reserva' => $codigoReservaStr,
+                'codigo_qr' => $tokenQr,
+                'token_qr' => $tokenQr,
+                'qr_imagen' => $tokenQr !== ''
+                    ? $this->ticketService->generarQrImagenDataUri($tokenQr)
+                    : '',
             ],
         ];
     }

@@ -3,7 +3,7 @@
  * Base URL: variable VITE_API_URL o rutas relativas /api con proxy de Vite.
  */
 
-function obtenerBaseUrl() {
+export function obtenerBaseUrl() {
   const env = import.meta.env.VITE_API_URL
   if (env && String(env).trim() !== '') {
     return String(env).replace(/\/$/, '')
@@ -459,4 +459,68 @@ export async function agregarProductosConfiteria(data) {
       combos: data.combos ?? [],
     }),
   })
+}
+
+/** Perfil del usuario autenticado (Sanctum). */
+export async function getPerfil(token) {
+  return solicitudAutenticada('/api/v1/perfil', token, { method: 'GET' })
+}
+
+/**
+ * Cambiar contraseña (servidor valida y hashea).
+ * @param {string} token
+ * @param {{ password_actual: string, password_nueva: string, password_nueva_confirmation: string }} datos
+ */
+export async function cambiarPassword(token, datos) {
+  return solicitudAutenticada('/api/v1/perfil/password', token, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  })
+}
+
+/** Próximas funciones e historial de reservas del usuario autenticado. */
+export async function getHistorialReservas(token) {
+  return solicitudAutenticada('/api/v1/perfil/reservas', token, {
+    method: 'GET',
+  })
+}
+
+/**
+ * Detalle público del ticket (QR visual incluido).
+ * @param {string} token TOKEN codificado en la URL del QR
+ */
+export async function getTicket(token) {
+  const segmento = encodeURIComponent(token)
+  return solicitud(`/api/v1/tickets/${segmento}`, { method: 'GET' })
+}
+
+/**
+ * Validación empleado/admin: devuelve cuerpo JSON aunque sea 422 (no lanza).
+ * @param {string} tokenSesion Bearer Sanctum (admin)
+ * @param {string} tokenQr Token escaneado o pegado
+ */
+export async function validarTicket(tokenSesion, tokenQr) {
+  const base = obtenerBaseUrl()
+  const url = base ? `${base}/api/v1/tickets/validar` : '/api/v1/tickets/validar'
+  const respuesta = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${tokenSesion}`,
+    },
+    body: JSON.stringify({ token_qr: tokenQr }),
+  })
+
+  let cuerpo = null
+  const texto = await respuesta.text()
+  if (texto) {
+    try {
+      cuerpo = JSON.parse(texto)
+    } catch {
+      cuerpo = { mensaje: texto }
+    }
+  }
+
+  return cuerpo ?? { exito: false, mensaje: 'Respuesta vacía' }
 }

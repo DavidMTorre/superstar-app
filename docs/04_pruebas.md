@@ -9,15 +9,25 @@
 
 Las pruebas de autenticación usan el trait **`RefreshDatabase`** para ejecutar migraciones y resetear el esquema entre tests, garantizando datos predecibles (por ejemplo, `id` de usuario igual a 1 en bases vacías).
 
-## 2. Casos de prueba implementados
+## 2. Índice modular de pruebas
 
-### 2.1 `Tests\Feature\Api\V1\HealthTest`
+| Carpeta / tema | Documento |
+|----------------|------------|
+| Matriz y enfoque funcional | [pruebas/pruebas_funcionales.md](pruebas/pruebas_funcionales.md) |
+| Integración capas | [pruebas/pruebas_integracion.md](pruebas/pruebas_integracion.md) |
+| Responsive / móvil | [pruebas/pruebas_responsive.md](pruebas/pruebas_responsive.md) |
+| QR y tickets | [pruebas/pruebas_qr.md](pruebas/pruebas_qr.md) |
+| Resultados y CI | [pruebas/resultados_pruebas.md](pruebas/resultados_pruebas.md) |
+
+## 3. Casos de prueba implementados (extracto)
+
+### 3.1 `Tests\Feature\Api\V1\HealthTest`
 
 | Test | Comportamiento verificado |
 |------|---------------------------|
 | `test_health_returns_ok_payload` | GET `/api/v1/health` responde 200, `status` = `ok`, estructura con `timestamp` y `application.name` / `application.environment`. |
 
-### 2.2 `Tests\Feature\Api\V1\Auth\AuthApiTest`
+### 3.2 `Tests\Feature\Api\V1\Auth\AuthApiTest`
 
 | Test | Comportamiento verificado |
 |------|---------------------------|
@@ -31,12 +41,16 @@ Las pruebas de autenticación usan el trait **`RefreshDatabase`** para ejecutar 
 | `test_login_usuario_no_existe` | 401 y mismo mensaje genérico. |
 | `test_login_campos_vacios` | 422, errores en `correo` y `contraseña`. |
 
-### 2.3 Otras pruebas de plantilla
+### 3.3 Otros módulos (referencia)
+
+Además de autenticación y health, el repositorio incluye tests de feature para: **películas**, **reservas**, **disponibilidad**, **confitería**, **pagos**, **accesos**, **perfil**, **tickets**, **admin** (dashboard, salas, horarios, productos, combos). Ver listado en [pruebas/pruebas_funcionales.md](pruebas/pruebas_funcionales.md).
+
+### 3.4 Otras pruebas de plantilla
 
 - `tests/Feature/ExampleTest.php` — respuesta exitosa de una ruta web de ejemplo.
 - `tests/Unit/ExampleTest.php` — aserción trivial de ejemplo.
 
-## 3. Resultados de ejecución
+## 4. Resultados de ejecución
 
 Ejecutar desde el directorio `backend/`:
 
@@ -46,9 +60,9 @@ php artisan test
 
 En un entorno donde todas las pruebas pasan, PHPUnit reporta el número total de tests y aserciones en la salida estándar (valores exactos dependen de la versión y del conjunto de tests activos).
 
-## 4. Métricas
+## 5. Métricas
 
-### M-01 — Cobertura de código
+### 5.1 M-01 — Cobertura de código
 
 La cobertura requiere una extensión de PHP (**PCOV** o **Xdebug**) habilitada. Sin ella, `php artisan test --coverage` informa que el controlador de cobertura no está disponible.
 
@@ -60,7 +74,7 @@ php artisan test --coverage
 
 Interpretación: porcentaje de líneas (o ramas, según configuración) del código fuente ejecutadas por la suite. Conviene fijar umbrales en CI cuando se active la cobertura.
 
-### M-02 — Tasa de éxito de pruebas
+### 5.2 M-02 — Tasa de éxito de pruebas
 
 Se define como el cociente entre tests que finalizan en verde y el total ejecutado. Objetivo operativo: **100 %** en la rama principal antes de integración.
 
@@ -72,7 +86,7 @@ php artisan test
 
 Código de salida distinto de cero indica fallo en algún test.
 
-## 5. Buenas prácticas aplicadas
+## 6. Buenas prácticas aplicadas
 
 - Pruebas de API orientadas al contrato JSON (`assertExactJson` / `assertJsonPath` donde corresponde).
 - Verificación de integridad de contraseña tras registro mediante `Hash::check`, sin exponer el hash en la respuesta.

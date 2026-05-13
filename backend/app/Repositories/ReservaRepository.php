@@ -163,4 +163,33 @@ class ReservaRepository
 
         return $q->get();
     }
+
+    /**
+     * Reservas de un usuario registrado con relaciones para perfil / historial.
+     *
+     * @return Collection<int, Reserva>
+     */
+    /**
+     * Persiste el token QR del ticket en la reserva (tras pago exitoso).
+     */
+    public function asignarTokenQr(Reserva $reserva, string $tokenQr): void
+    {
+        $reserva->token_qr = $tokenQr;
+        $reserva->save();
+    }
+
+    public function listarPorUsuario(int $userId): Collection
+    {
+        return Reserva::query()
+            ->where('user_id', $userId)
+            ->with([
+                'pelicula',
+                'sala',
+                'pago',
+                'reservaProductos.producto',
+            ])
+            ->orderBy('fecha')
+            ->orderBy('hora_inicio')
+            ->get();
+    }
 }

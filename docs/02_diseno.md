@@ -21,7 +21,7 @@ Los controladores de autenticación son **invocables** (`__invoke`), lo que mant
 - Laravel registra el archivo `routes/api.php` con prefijo global **`api`** (configuración por defecto del framework).
 - Dentro del archivo, las rutas se agrupan con `Route::prefix('v1')`, de modo que las URLs efectivas son **`/api/v1/...`**.
 
-### 2.2 Endpoints implementados
+### 2.2 Endpoints de autenticación (extracto)
 
 | Método | Ruta | Nombre de ruta | Descripción |
 |--------|------|----------------|-------------|
@@ -29,6 +29,8 @@ Los controladores de autenticación son **invocables** (`__invoke`), lo que mant
 | POST | `/api/v1/auth/registro` | `api.v1.auth.registro` | Alta de usuario. |
 | POST | `/api/v1/auth/login` | `api.v1.auth.login` | Inicio de sesión. |
 | POST | `/api/v1/auth/invitado` | `api.v1.auth.invitado` | Identificador de invitado. |
+
+Inventario completo del API (cartelera, reservas, pagos, tickets, admin, perfil, etc.): [anexos/endpoints_api.md](anexos/endpoints_api.md).
 
 ### 2.3 Convención de respuestas JSON
 
@@ -46,12 +48,20 @@ No usa `ApiFormRequest` con validación de campos; `HealthCheckRequest` prepara 
 ## 3. Decisiones técnicas
 
 - **Laravel 12** (según `composer.json`) y **PHP ^8.2**.
-- **MySQL** como motor relacional; tabla `users` ampliada con `telefono`, `fecha_nacimiento`, `genero` además de los campos estándar.
+- **MySQL** como motor relacional en despliegue típico; **SQLite** habitual en tests automatizados.
 - **Nombres de campos en API en español** donde aplica (`correo`, `contraseña`, `nombre`) mientras el modelo usa convenciones Laravel (`email`, `password`, `name`) — el servicio realiza el mapeo.
-- **Sin tokens OAuth/Sanctum** en el código actual: el login confirma credenciales y devuelve el objeto usuario público; una capa de tokens puede añadirse después sin romper el contrato de capas.
-- **Modo invitado:** identificador `guest_<uuid sin guiones>` generado en memoria; no se persiste en base de datos en el flujo actual.
-- **Pruebas:** `RefreshDatabase` en pruebas de autenticación para aislar estado entre tests.
+- **Laravel Sanctum:** tokens de acceso personal para sesión del SPA (admin y cliente); rutas protegidas con `auth:sanctum` y, donde aplica, middleware `es_admin`.
+- **Modo invitado:** identificador `guest_<uuid sin guiones>` generado en memoria; no se persiste fila de usuario para ese flujo.
+- **Pruebas:** suite de feature en `tests/Feature/` con `RefreshDatabase` en flujos que modifican datos.
 
-## 4. Dependencias del cliente
+## 4. Mapa documental
+
+| Tema | Ubicación |
+|------|-----------|
+| Arquitectura en capas (extendida) | [arquitectura/arquitectura_general.md](arquitectura/arquitectura_general.md) |
+| API — diseño | [arquitectura/api_rest.md](arquitectura/api_rest.md) |
+| Funcionalidades | [funcionalidades/](funcionalidades/) |
+
+## 5. Dependencias del cliente
 
 El frontend (`frontend/package.json`) usa **React 19** y **Vite 8**; las llamadas a la API deben usar `Content-Type: application/json` y la base URL del servidor Laravel configurada en el entorno del cliente.

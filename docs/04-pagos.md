@@ -6,7 +6,7 @@ El módulo permite **registrar un pago asociado a una reserva existente**, utili
 
 1. Se crea un registro en la tabla **`pagos`** con estado **`pagado`** y **`fecha_pago`** actual.
 2. Se actualiza **`metadata.pago_estado`** de la reserva a **`pagado`**.
-3. Se genera un **código único** (`codigo_qr`) con **`App\Support\TicketQr`** (HMAC-SHA256 sobre `codigo_reserva|id`) y se **persiste** en **`pagos.codigo_ticket_qr`** para permitir la validación de acceso en tiempo constante.
+3. Se genera un **código único** (`codigo_qr` / `token_qr`) con **`App\Support\TicketQr`** (HMAC-SHA256 sobre `codigo_reserva|id`), se **persiste** en **`pagos.codigo_ticket_qr`** y se **replica** en **`reservas.token_qr`** para resolución rápida y enlaces de ticket.
 
 La restricción **`UNIQUE` sobre `reserva_id`** impide más de un pago por reserva a nivel de base de datos; la capa de aplicación valida previamente para devolver un mensaje controlado.
 
@@ -41,12 +41,17 @@ La restricción **`UNIQUE` sobre `reserva_id`** impide más de un pago por reser
       "fecha_pago": "2026-06-01T10:00:00+00:00"
     },
     "ticket": {
-      "codigo_qr": "..."
+      "codigo_reserva": "550e8400-e29b-41d4-a716-446655440000",
+      "codigo_qr": "<token_hmac_urlsafe>",
+      "token_qr": "<token_hmac_urlsafe>",
+      "qr_imagen": "data:image/png;base64,..."
     }
   },
   "mensaje": "Pago procesado correctamente"
 }
 ```
+
+> `qr_imagen` es una **data URI** generada en servidor (`simplesoftwareio/simple-qrcode`). Con **ext-gd** se usa PNG; sin GD, SVG en base64 (compatible con `<img>`).
 
 ### Errores habituales (HTTP 422)
 
@@ -72,7 +77,7 @@ Archivo: `tests/Feature/Api/V1/Pagos/RealizarPagoApiTest.php`
 
 | Caso | Descripción |
 |------|-------------|
-| `test_pago_exitoso` | Flujo completo: filas en `pagos`, metadata de reserva actualizada, `ticket.codigo_qr` presente. |
+| `test_pago_exitoso` | Flujo completo: filas en `pagos`, metadata de reserva, `ticket.qr_imagen`, `reservas.token_qr` alineado con `codigo_ticket_qr`. |
 | `test_reserva_inexistente` | UUID válido no registrado → 422 de validación (`exists`). |
 | `test_pago_duplicado` | Segundo intento sobre la misma reserva → 422 desde servicio. |
 | `test_metodo_invalido` | Método fuera del conjunto permitido → 422 de validación. |

@@ -218,14 +218,19 @@ export default function ConfiteriaPage() {
     !cargandoCatalogo && catalogo.length === 0 && combos.length === 0
 
   return (
-    <div style={{ paddingTop: 'var(--space-lg)' }}>
-      <p style={{ marginBottom: 'var(--space-md)' }}>
-        <Link to="/cartelera">← Inicio</Link>
+    <div className="mx-auto max-w-6xl pb-6 pt-2">
+      <p className="mb-4">
+        <Link
+          to="/cartelera"
+          className="text-sm font-medium text-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
+        >
+          ← Inicio
+        </Link>
       </p>
 
-      <div className="mc-form-panel">
-        <h1 style={{ marginBottom: 'var(--space-sm)' }}>Confitería</h1>
-        <p style={{ fontSize: '0.9rem', color: 'var(--color-text-light)', marginBottom: 'var(--space-md)' }}>
+      <div className="mc-form-panel !max-w-none border border-[var(--color-border-subtle)] bg-[var(--color-card)]/90 shadow-[0_24px_64px_rgba(0,0,0,0.35)] backdrop-blur-md">
+        <h1 className="mb-2 text-2xl font-extrabold tracking-tight">Confitería</h1>
+        <p className="mb-6 text-sm text-[var(--color-text-muted)]">
           Combos y productos sueltos. El pago incluirá entrada + confitería.
         </p>
 
@@ -418,13 +423,7 @@ export default function ConfiteriaPage() {
         ) : null}
 
         <section
-          style={{
-            marginBottom: 'var(--space-lg)',
-            padding: 'var(--space-md)',
-            borderRadius: 'var(--radius-md)',
-            background: 'rgba(255, 107, 0, 0.06)',
-            border: '1px solid rgba(255, 107, 0, 0.2)',
-          }}
+          className="mb-6 rounded-xl border border-[var(--color-border-subtle)] bg-[rgba(255,122,0,0.06)] p-4 md:p-5"
         >
           <h2 style={{ fontSize: '1rem', marginBottom: 'var(--space-sm)' }}>Resumen</h2>
           <p style={{ margin: '0.25rem 0', fontSize: '0.95rem' }}>

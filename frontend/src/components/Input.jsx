@@ -7,9 +7,11 @@ export function Input({
   tipo = 'text',
   error,
   className = '',
+  inputClassName = '',
   ...props
 }) {
   const idFinal = id || props.name
+  const clasesInput = ['mc-input', (inputClassName || '').trim()].filter(Boolean).join(' ')
 
   return (
     <div className={`mc-input-wrap ${className}`.trim()}>
@@ -19,7 +21,7 @@ export function Input({
       <input
         id={idFinal}
         type={tipo}
-        className="mc-input"
+        className={clasesInput}
         aria-invalid={error ? 'true' : undefined}
         {...props}
       />

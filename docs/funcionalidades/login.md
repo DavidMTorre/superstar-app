@@ -76,8 +76,11 @@ HTTP `200 OK`:
       "correo": "ana@example.com",
       "telefono": "612345678",
       "fecha_nacimiento": "1995-03-20",
-      "genero": "femenino"
-    }
+      "genero": "femenino",
+      "rol": "cliente"
+    },
+    "token": "<plainTextToken>",
+    "token_type": "Bearer"
   },
   "mensaje": "Inicio de sesión exitoso"
 }
@@ -112,6 +115,12 @@ HTTP `422` — por ejemplo cuerpo vacío:
   }
 }
 ```
+
+## Token de sesión (Laravel Sanctum)
+
+Tras un login correcto, el controlador invalida tokens previos del usuario, crea un **token de acceso personal** Sanctum y lo devuelve en `datos.token` junto con `datos.token_type` (`Bearer`). El cliente React almacena el par usuario + token (p. ej. `localStorage`) y envía `Authorization: Bearer {token}` en rutas protegidas (`/api/v1/admin/*`, `/api/v1/perfil/*`, validación de tickets para personal autorizado, etc.).
+
+**Cierre de sesión (logout):** en cliente se elimina el token del almacenamiento local; no hay endpoint dedicado de revocación en la API pública documentada aquí (opción futura: `POST` de logout que invalide el token actual).
 
 ## Pruebas asociadas
 
