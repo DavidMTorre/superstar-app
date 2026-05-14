@@ -38,21 +38,13 @@ class TicketService
 
         if (extension_loaded('gd')) {
             /** @var string $binary */
-            $binary = QrCode::format('png')
-                ->size(320)
-                ->margin(2)
-                ->errorCorrection('H')
-                ->generate($url);
+            $binary = $this->generarContenidoQr('png', $url);
 
             return 'data:image/png;base64,'.base64_encode($binary);
         }
 
         /** @var string $svg */
-        $svg = QrCode::format('svg')
-            ->size(320)
-            ->margin(2)
-            ->errorCorrection('H')
-            ->generate($url);
+        $svg = $this->generarContenidoQr('svg', $url);
 
         return 'data:image/svg+xml;base64,'.base64_encode($svg);
     }
@@ -111,44 +103,16 @@ class TicketService
         }
 
         $evaluacion = $this->evaluarEstadoTicket($tokenQr);
-
-        if ($evaluacion['tipo'] === 'invalido' || $evaluacion['tipo'] === 'no_pagado') {
-            return $this->respuestaValidacion(false, 'Ticket inválido', null, 422);
-        }
-
-        if ($evaluacion['tipo'] === 'expirado') {
-            return $this->respuestaValidacion(false, 'La función ya finalizó', null, 422);
-        }
-
-        if ($evaluacion['tipo'] === 'usado') {
-            return $this->respuestaValidacion(false, 'Ticket ya utilizado', null, 422);
-        }
-
-        if ($evaluacion['tipo'] !== 'valido' || ! isset($evaluacion['reserva'])) {
-            return $this->respuestaValidacion(false, 'Ticket inválido', null, 422);
+        $rechazoTemprano = $this->respuestaValidacionEmpleadoPorEvaluacion($evaluacion);
+        if ($rechazoTemprano !== null) {
+            return $rechazoTemprano;
         }
 
         /** @var Reserva $reserva */
         $reserva = $evaluacion['reserva'];
 
         try {
-            $this->ticketRepository->transaccion(function () use ($reserva): void {
-                $bloqueada = $this->ticketRepository->bloquearReservaPorId((int) $reserva->id);
-
-                if ($bloqueada === null) {
-                    throw new TicketYaUsadoException;
-                }
-
-                if ($bloqueada->ticket_usado || $bloqueada->fecha_uso_acceso !== null || $bloqueada->estado === 'utilizada') {
-                    throw new TicketYaUsadoException;
-                }
-
-                if ($this->funcionYaFinalizo($bloqueada)) {
-                    throw new TicketYaUsadoException;
-                }
-
-                $this->ticketRepository->registrarIngreso($bloqueada);
-            });
+            $this->registrarIngresoEnTransaccion($reserva, true);
         } catch (TicketYaUsadoException) {
             return $this->respuestaValidacion(false, 'Ticket ya utilizado', null, 422);
         }
@@ -179,48 +143,16 @@ class TicketService
         }
 
         $evaluacion = $this->evaluarEstadoTicket($codigoQr);
-
-        if ($evaluacion['tipo'] === 'no_pagado') {
-            return ['ok' => false, 'mensaje' => 'La reserva no está pagada.'];
-        }
-
-        if ($evaluacion['tipo'] === 'invalido') {
-            return ['ok' => false, 'mensaje' => 'QR inválido.'];
-        }
-
-        if ($evaluacion['tipo'] === 'expirado') {
-            return ['ok' => false, 'mensaje' => 'La función ya finalizó'];
-        }
-
-        if ($evaluacion['tipo'] === 'usado') {
-            return ['ok' => false, 'mensaje' => 'Este ticket ya fue utilizado.'];
-        }
-
-        if ($evaluacion['tipo'] !== 'valido' || ! isset($evaluacion['reserva'])) {
-            return ['ok' => false, 'mensaje' => 'QR inválido.'];
+        $rechazoTemprano = $this->respuestaLegacyPorEvaluacion($evaluacion);
+        if ($rechazoTemprano !== null) {
+            return $rechazoTemprano;
         }
 
         /** @var Reserva $reserva */
         $reserva = $evaluacion['reserva'];
 
         try {
-            $this->ticketRepository->transaccion(function () use ($reserva): void {
-                $bloqueada = $this->ticketRepository->bloquearReservaPorId((int) $reserva->id);
-
-                if ($bloqueada === null) {
-                    throw new TicketYaUsadoException;
-                }
-
-                if ($bloqueada->fecha_uso_acceso !== null || $bloqueada->estado === 'utilizada') {
-                    throw new TicketYaUsadoException;
-                }
-
-                if ($this->funcionYaFinalizo($bloqueada)) {
-                    throw new TicketYaUsadoException;
-                }
-
-                $this->ticketRepository->registrarIngreso($bloqueada);
-            });
+            $this->registrarIngresoEnTransaccion($reserva, false);
         } catch (TicketYaUsadoException) {
             return ['ok' => false, 'mensaje' => 'Este ticket ya fue utilizado.'];
         }
@@ -271,9 +203,7 @@ class TicketService
 
     private function funcionYaFinalizo(Reserva $reserva): bool
     {
-        $fecha = $reserva->fecha instanceof Carbon
-            ? $reserva->fecha->format('Y-m-d')
-            : Carbon::parse((string) $reserva->fecha)->format('Y-m-d');
+        $fecha = $this->formatoFechaReservaYmd($reserva);
 
         $horaFin = trim((string) $reserva->hora_fin);
         if ($horaFin === '') {
@@ -302,9 +232,7 @@ class TicketService
             'pelicula' => (string) ($reserva->pelicula?->titulo ?? ''),
             'imagen_url' => $reserva->pelicula?->imagen_url,
             'sala' => (string) ($reserva->sala?->nombre ?? ''),
-            'fecha' => $reserva->fecha instanceof Carbon
-                ? $reserva->fecha->format('Y-m-d')
-                : Carbon::parse((string) $reserva->fecha)->format('Y-m-d'),
+            'fecha' => $this->formatoFechaReservaYmd($reserva),
             'hora_inicio' => $this->formatoHoraCorta((string) $reserva->hora_inicio),
             'hora_fin' => $this->formatoHoraCorta((string) $reserva->hora_fin),
             'asientos' => (int) $reserva->cantidad_personas,
@@ -372,5 +300,96 @@ class TicketService
             'datos' => $datos,
             'codigo_http' => $codigoHttp,
         ];
+    }
+
+    /**
+     * @param  array{
+     *     tipo: string,
+     *     reserva?: Reserva,
+     *     pago?: Pago|null
+     * }  $evaluacion
+     * @return array{exito: bool, mensaje: string, datos: array<string, mixed>|null, codigo_http: int}|null
+     */
+    private function respuestaValidacionEmpleadoPorEvaluacion(array $evaluacion): ?array
+    {
+        return match ($evaluacion['tipo']) {
+            'invalido', 'no_pagado' => $this->respuestaValidacion(false, 'Ticket inválido', null, 422),
+            'expirado' => $this->respuestaValidacion(false, 'La función ya finalizó', null, 422),
+            'usado' => $this->respuestaValidacion(false, 'Ticket ya utilizado', null, 422),
+            'valido' => isset($evaluacion['reserva'])
+                ? null
+                : $this->respuestaValidacion(false, 'Ticket inválido', null, 422),
+            default => $this->respuestaValidacion(false, 'Ticket inválido', null, 422),
+        };
+    }
+
+    /**
+     * @param  array{
+     *     tipo: string,
+     *     reserva?: Reserva,
+     *     pago?: Pago|null
+     * }  $evaluacion
+     * @return array{ok: bool, mensaje: string}|null
+     */
+    private function respuestaLegacyPorEvaluacion(array $evaluacion): ?array
+    {
+        return match ($evaluacion['tipo']) {
+            'no_pagado' => ['ok' => false, 'mensaje' => 'La reserva no está pagada.'],
+            'invalido' => ['ok' => false, 'mensaje' => 'QR inválido.'],
+            'expirado' => ['ok' => false, 'mensaje' => 'La función ya finalizó'],
+            'usado' => ['ok' => false, 'mensaje' => 'Este ticket ya fue utilizado.'],
+            'valido' => isset($evaluacion['reserva'])
+                ? null
+                : ['ok' => false, 'mensaje' => 'QR inválido.'],
+            default => ['ok' => false, 'mensaje' => 'QR inválido.'],
+        };
+    }
+
+    /**
+     * Empleado: rechaza también si `ticket_usado` está marcado antes de registrar ingreso.
+     * Legacy: no considera solo `ticket_usado` (misma rama que el flujo histórico).
+     */
+    private function registrarIngresoEnTransaccion(Reserva $reserva, bool $rechazarSiTicketMarcadoUsado): void
+    {
+        $this->ticketRepository->transaccion(function () use ($reserva, $rechazarSiTicketMarcadoUsado): void {
+            $bloqueada = $this->ticketRepository->bloquearReservaPorId((int) $reserva->id);
+
+            if ($bloqueada === null) {
+                throw new TicketYaUsadoException;
+            }
+
+            if ($rechazarSiTicketMarcadoUsado && $bloqueada->ticket_usado) {
+                throw new TicketYaUsadoException;
+            }
+
+            if ($bloqueada->fecha_uso_acceso !== null || $bloqueada->estado === 'utilizada') {
+                throw new TicketYaUsadoException;
+            }
+
+            if ($this->funcionYaFinalizo($bloqueada)) {
+                throw new TicketYaUsadoException;
+            }
+
+            $this->ticketRepository->registrarIngreso($bloqueada);
+        });
+    }
+
+    private function formatoFechaReservaYmd(Reserva $reserva): string
+    {
+        return $reserva->fecha instanceof Carbon
+            ? $reserva->fecha->format('Y-m-d')
+            : Carbon::parse((string) $reserva->fecha)->format('Y-m-d');
+    }
+
+    private function generarContenidoQr(string $formato, string $url): string
+    {
+        /** @var string $contenido */
+        $contenido = QrCode::format($formato)
+            ->size(320)
+            ->margin(2)
+            ->errorCorrection('H')
+            ->generate($url);
+
+        return $contenido;
     }
 }
