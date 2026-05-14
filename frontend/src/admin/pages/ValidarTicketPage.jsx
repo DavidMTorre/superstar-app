@@ -2,30 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
 import { useOutletContext } from 'react-router-dom'
 import { validarTicket } from '../../api/api'
-
-function extraerTokenDesdeEscaneo(texto) {
-  const limpio = String(texto ?? '').trim()
-  if (!limpio) return ''
-
-  try {
-    const u = new URL(limpio)
-    const segmentos = u.pathname.split('/').filter(Boolean)
-    const i = segmentos.indexOf('ticket')
-    if (i >= 0 && segmentos[i + 1]) {
-      return decodeURIComponent(segmentos[i + 1])
-    }
-  } catch {
-    /* URL incompleta */
-  }
-
-  const partes = limpio.split('/').filter(Boolean)
-  const idx = partes.indexOf('ticket')
-  if (idx >= 0 && partes[idx + 1]) {
-    return decodeURIComponent(partes[idx + 1])
-  }
-
-  return limpio
-}
+import { extraerTokenDesdeTextoEscaneado } from '../../utils/ticketToken'
 
 export default function ValidarTicketPage() {
   const { token } = useOutletContext() ?? {}
@@ -42,7 +19,7 @@ export default function ValidarTicketPage() {
 
   const procesarToken = useCallback(
     async (tokenQrRaw) => {
-      const tokenQr = extraerTokenDesdeEscaneo(tokenQrRaw)
+      const tokenQr = extraerTokenDesdeTextoEscaneado(tokenQrRaw)
       if (!tokenQr) {
         setResultado({ tipo: 'invalido', mensaje: 'No se pudo leer el código.' })
         return
